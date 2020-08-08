@@ -1,4 +1,6 @@
-package spanner
+package singer
+
+import "errors"
 
 var ErrDuplicate = errors.New("Singer already exist")
 var ErrNotFound = errors.New("Singer not found")
