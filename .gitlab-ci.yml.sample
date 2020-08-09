@@ -1,0 +1,14 @@
+image: golang:1.14
+
+stages:
+  - test
+
+unit_test:
+  stage: test
+  services:
+    - name: gcr.io/cloud-spanner-emulator/emulator:1.0.0
+      alias: emulator
+  variables:
+    SPANNER_EMULATOR_HOST: "emulator:9010"
+  script:
+    - make test
