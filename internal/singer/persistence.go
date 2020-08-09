@@ -8,7 +8,7 @@ import (
 // Repository reads/writes the data to the actual storage
 type Repository interface {
 	Create(context.Context, CreatePayload) error
-	List(context.Context, FilterPayload) ([]Detail, error)
+	List(context.Context, FilterPayload) ([]*Detail, error)
 	Get(context.Context, int64) (*Detail, error)
 }
 

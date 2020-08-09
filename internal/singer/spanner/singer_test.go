@@ -162,7 +162,7 @@ func (s *SingerTestSuite) SetupTest() {
 	// TRUNCATE Singers Related Table
 	_, err := s.provider.Client.ReadWriteTransaction(ctx, func(ctx context.Context, tx *googleSpanner.ReadWriteTransaction) error {
 		stmt := googleSpanner.Statement{
-			SQL: "DELETE FROM Singers WHERE 1 = 1",
+			SQL: fmt.Sprintf("DELETE FROM %s WHERE 1 = 1", singerTableName),
 		}
 
 		_, err := tx.Update(ctx, stmt)
@@ -182,7 +182,7 @@ func (s *SingerTestSuite) TestSuccessCreatePayload() {
 	err := s.provider.Create(ctx, payload)
 	assert.Nil(s.T(), err)
 
-	row, err := s.provider.Client.Single().ReadRow(ctx, "Singers", googleSpanner.Key{singerID}, []string{"SingerID", "FirstName", "LastName", "Info", "BirthDate"})
+	row, err := s.provider.Client.Single().ReadRow(ctx, singerTableName, googleSpanner.Key{singerID}, singerColumns)
 
 	assert.Nil(s.T(), err)
 	assert.NotNil(s.T(), row)
@@ -192,11 +192,11 @@ func (s *SingerTestSuite) TestSuccessCreatePayload() {
 	assert.Nil(s.T(), err)
 
 	assert.Equal(s.T(), payload.SingerID, singerRow.SingerID)
-	assert.Equal(s.T(), payload.FirstName, singerRow.FirstName)
-	assert.Equal(s.T(), payload.LastName, singerRow.LastName)
-	assert.Equal(s.T(), payload.BirthDate.Year(), singerRow.BirthDate.Year())
-	assert.Equal(s.T(), payload.BirthDate.Month(), singerRow.BirthDate.Month())
-	assert.Equal(s.T(), payload.BirthDate.Day(), singerRow.BirthDate.Day())
+	assert.Equal(s.T(), payload.FirstName, singerRow.FirstName.String())
+	assert.Equal(s.T(), payload.LastName, singerRow.LastName.String())
+	assert.Equal(s.T(), payload.BirthDate.Year(), singerRow.BirthDate.Date.Year)
+	assert.Equal(s.T(), payload.BirthDate.Month(), singerRow.BirthDate.Date.Month)
+	assert.Equal(s.T(), payload.BirthDate.Day(), singerRow.BirthDate.Date.Day)
 
 	err = s.provider.Create(ctx, payload)
 	assert.NotNil(s.T(), err)
@@ -213,14 +213,14 @@ func (s *SingerTestSuite) TestList() {
 	singer2.BirthDate = time.Date(2002, 02, 02, 0, 0, 0, 0, time.Local)
 
 	err := s.provider.Create(ctx, singer1)
-	if !assert.Nil(s.T(), err){
+	if !assert.Nil(s.T(), err) {
 		assert.FailNow(s.T(), "failed to create Singer")
 	}
 
 	err = s.provider.Create(ctx, singer2)
 	assert.Nil(s.T(), err)
 
-	if !assert.Nil(s.T(), err){
+	if !assert.Nil(s.T(), err) {
 		assert.FailNow(s.T(), "failed to create Singer")
 	}
 
@@ -235,7 +235,7 @@ func (s *SingerTestSuite) TestList() {
 	})
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 1, len(singers))
-	assert.Equal(s.T(), "singer1", singers[0].SingerID)
+	assert.Equal(s.T(), int64(1), singers[0].SingerID)
 
 	// Test Filter By BirthDate
 	singers, err = s.provider.List(ctx, singer.FilterPayload{
@@ -243,23 +243,23 @@ func (s *SingerTestSuite) TestList() {
 	})
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 1, len(singers))
-	assert.Equal(s.T(), "singer2", singers[0].SingerID)
+	assert.Equal(s.T(), int64(2), singers[0].SingerID)
 
 	// Test Filter By Name and BirthDate
 	singers, err = s.provider.List(ctx, singer.FilterPayload{
-		Name: "and",
+		Name:           "and",
 		BirthDateStart: time.Date(2000, 01, 01, 0, 0, 0, 0, time.Local),
 	})
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 0, len(singers))
 
 	singers, err = s.provider.List(ctx, singer.FilterPayload{
-		Name: "and",
+		Name:         "and",
 		BirthDateEnd: time.Date(2000, 01, 01, 0, 0, 0, 0, time.Local),
 	})
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 1, len(singers))
-	assert.Equal(s.T(), 1, singers[0].SingerID)
+	assert.Equal(s.T(), int64(1), singers[0].SingerID)
 }
 
 func (s *SingerTestSuite) TestGet() {
@@ -290,13 +290,13 @@ func (s *SingerTestSuite) TestGet() {
 }
 
 func getCompleteCreatePayload(singerID int64) singer.CreatePayload {
-	birthDate := time.Date(1990, 7, 21, 0, 0, 0,0, time.Local)
+	birthDate := time.Date(1990, 7, 21, 0, 0, 0, 0, time.Local)
 	completePayload := singer.CreatePayload{
-		SingerID: singerID,
+		SingerID:  singerID,
 		FirstName: "First",
-		LastName: "Last",
+		LastName:  "Last",
 		Info: singer.Info{
-			Songs: []string{"song-1", "song-2"},
+			Songs:  []string{"song-1", "song-2"},
 			Awards: []string{"awards-1", "awards-2"},
 		},
 		BirthDate: birthDate,

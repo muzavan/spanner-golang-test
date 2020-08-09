@@ -1,8 +1,8 @@
 package main
 
 import (
-	_ "github.com/muzavan/spanner-golang-test/internal/singer/spanner"
 	"fmt"
+	_ "github.com/muzavan/spanner-golang-test/internal/singer/spanner"
 )
 
 func main() {
